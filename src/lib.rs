@@ -166,6 +166,7 @@ pub fn list(cwd: &Path) -> anyhow::Result<Value> {
 /// `workflows stop <id>` — flag the ledger and stop its running runs.
 pub fn stop(cwd: &Path, id: &str) -> anyhow::Result<Value> {
     let mut l = ledger::resolve(cwd, Some(id))?;
+    anyhow::ensure!(l.status == "running", "workflow {} already finished", l.id);
     l.stop = true;
     let mut stopped = 0;
     for item in l.items.iter().filter(|i| i.status == "running") {

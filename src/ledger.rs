@@ -75,7 +75,7 @@ impl Item {
         !matches!(self.status.as_str(), "pending" | "running")
     }
     pub fn ok(&self) -> bool {
-        self.status == "completed"
+        matches!(self.status.as_str(), "completed" | "ok")
     }
 }
 
