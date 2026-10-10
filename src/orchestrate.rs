@@ -203,6 +203,15 @@ fn write_report(l: &Ledger) -> String {
     md
 }
 
+/// Re-read the ledger's `stop` flag from disk: a `/workflows stop` can land
+/// while `launch_one` blocks on the leaf call, and the in-memory copy must
+/// not clobber it on the next save.
+fn merge_stop(l: &mut crate::ledger::Ledger, ledger_path: &Path) {
+    if let Ok(fresh) = ledger::load(ledger_path) {
+        l.stop |= fresh.stop;
+    }
+}
+
 /// One supervisor pass over the ledger. The only writer of the file.
 pub fn orchestrate(ledger_path: &Path) -> anyhow::Result<()> {
     let mut l = ledger::load(ledger_path)?;
@@ -234,12 +243,14 @@ pub fn orchestrate(ledger_path: &Path) -> anyhow::Result<()> {
                 launch_one(&prior, item, &cwd);
                 // Persist the run_id immediately — a crash between launch
                 // and save would orphan the subagent run.
+                merge_stop(&mut l, ledger_path);
                 ledger::save(ledger_path, &l)?;
             }
         }
         if l.done() || (l.stop && l.running_items() == 0) {
             break;
         }
+        merge_stop(&mut l, ledger_path);
         ledger::save(ledger_path, &l)?;
         std::thread::sleep(POLL);
         l = ledger::load(ledger_path)?;
