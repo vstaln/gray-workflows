@@ -185,7 +185,13 @@ fn main() -> anyhow::Result<()> {
     match argv.get(1).map(String::as_str) {
         None | Some("sidecar") => sidecar().map_err(anyhow::Error::from),
         _ => {
-            let cli = Cli::try_parse_from(argv)?;
+            let cli = match Cli::try_parse_from(argv) {
+                Ok(c) => c,
+                Err(e) => {
+                    let _ = e.print();
+                    std::process::exit(if e.use_stderr() { 1 } else { 0 });
+                }
+            };
             match cli.command {
                 Some(action) => {
                     let cwd = std::env::current_dir()?;
