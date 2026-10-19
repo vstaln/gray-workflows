@@ -125,7 +125,31 @@ impl Ledger {
     }
     /// True while a detached orchestrator owns this ledger.
     pub fn orchestrator_alive(&self) -> bool {
-        self.pid != 0 && unsafe { libc::kill(self.pid as i32, 0) } == 0
+        self.pid != 0 && pid_alive(self.pid)
+    }
+}
+
+#[cfg(unix)]
+fn pid_alive(pid: u32) -> bool {
+    let r = unsafe { libc::kill(pid as i32, 0) };
+    r == 0
+}
+
+#[cfg(windows)]
+fn pid_alive(pid: u32) -> bool {
+    use windows_sys::Win32::Foundation::{CloseHandle, STILL_ACTIVE};
+    use windows_sys::Win32::System::Threading::{
+        GetExitCodeProcess, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+    };
+    unsafe {
+        let h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+        if h.is_null() {
+            return false;
+        }
+        let mut code = 0u32;
+        let alive = GetExitCodeProcess(h, &mut code) != 0 && code == STILL_ACTIVE as u32;
+        CloseHandle(h);
+        return alive;
     }
 }
 
@@ -270,14 +294,25 @@ pub fn new_ledger(
     })
 }
 
-/// 8-hex workflow id from /dev/urandom, retried on collision.
+/// 8-hex workflow id, retried on collision. Entropy is std-only: a fresh
+/// RandomState's OS-seeded keys mixed with time and pid (no /dev/urandom
+/// on Windows).
 pub fn new_id(cwd: &Path) -> anyhow::Result<String> {
-    use std::io::Read;
-    let mut f = std::fs::File::open("/dev/urandom")?;
+    use std::collections::hash_map::RandomState;
+    use std::hash::{BuildHasher, Hasher};
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static N: AtomicU64 = AtomicU64::new(0);
     for _ in 0..16 {
-        let mut b = [0u8; 4];
-        f.read_exact(&mut b)?;
-        let id = format!("{:08x}", u32::from_ne_bytes(b));
+        let mut h = RandomState::new().build_hasher();
+        h.write_u64(N.fetch_add(1, Ordering::Relaxed));
+        h.write_u32(std::process::id());
+        h.write_u128(
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0),
+        );
+        let id = format!("{:08x}", h.finish() as u32);
         if !path(cwd, &id).exists() {
             return Ok(id);
         }
