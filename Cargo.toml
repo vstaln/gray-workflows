@@ -1,6 +1,6 @@
 [package]
 name = "gray-workflows"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 license = "MIT"
 description = "Batch/durable multi-agent workflows for gray: fan a yaml/json spec across `gray subagents run` items with per-item worktrees, a resumable ledger, and an aggregate report"
