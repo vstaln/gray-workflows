@@ -41,6 +41,7 @@ pub fn manifest() -> Value {
         "sidecar_args": ["sidecar"],
         "tools": [],
         "commands": ["/workflow", "/workflows", "/deep-research"],
+        "command_descriptions": {"/workflow": "run a multi-step workflow", "/workflows": "list saved workflows", "/deep-research": "research a question across the web"},
         "subcommands": ["workflows"],
         "hooks": ["prompt/context"],
         "completion": ["run", "status", "list", "resume", "stop", "report", "deep-research", "help"],
