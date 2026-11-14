@@ -17,7 +17,7 @@ use gray_workflows as wf;
 use gray_workflows::orchestrate;
 use serde_json::{json, Value};
 use std::io::{BufRead, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
 #[command(
@@ -73,7 +73,7 @@ fn session_cwd(params: &Value) -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("."))
 }
 
-fn execute(action: Action, cwd: &PathBuf) -> anyhow::Result<Value> {
+fn execute(action: Action, cwd: &Path) -> anyhow::Result<Value> {
     match action {
         Action::Run {
             specfile,
