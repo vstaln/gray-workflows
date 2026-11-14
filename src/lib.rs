@@ -40,11 +40,21 @@ pub fn manifest() -> Value {
         "protocol": PROTOCOL,
         "sidecar_args": ["sidecar"],
         "tools": [],
+        "description": "multi-step agent workflows from a spec file",
         "commands": ["/workflow", "/workflows", "/deep-research"],
         "command_descriptions": {"/workflow": "run a multi-step workflow", "/workflows": "list saved workflows", "/deep-research": "research a question across the web"},
         "subcommands": ["workflows"],
         "hooks": ["prompt/context"],
-        "completion": ["run", "status", "list", "resume", "stop", "report", "deep-research", "help"],
+        "completion": [
+            {"arg": "run", "description": "run a workflow spec"},
+            {"arg": "status", "description": "progress of the last run"},
+            {"arg": "list", "description": "list saved workflow specs"},
+            {"arg": "resume", "description": "resume a paused run"},
+            {"arg": "stop", "description": "stop the running workflow"},
+            {"arg": "report", "description": "write the run's report"},
+            {"arg": "deep-research", "description": "research a question across the web"},
+            {"arg": "help", "description": "usage and verbs"},
+        ],
     })
 }
 
